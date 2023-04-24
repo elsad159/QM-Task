@@ -9,6 +9,14 @@ const FormsSms = () => {
   const [threadName, setThreadName] = useState("");
   const [error, setError] = useState("");
   const [text, setText] = useState("");
+  const [message, setMessage] = useState("");
+  const [smsCount, setSmsCount] = useState(0);
+
+  function handleMessageChange(event) {
+    const messageText = event.target.value;
+    setMessage(messageText);
+    setSmsCount(Math.ceil(messageText.length / 156));
+  }
 
   const handleTextChange = (value) => {
     setText(value);
@@ -144,7 +152,14 @@ const FormsSms = () => {
               <option value="option1">Option 1</option>
             </select>
           </div>
-          <textarea className="textarea border border-gray-300 rounded w-full my-2 py-1 pl-2 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent" />
+          <input
+            type="text"
+            id="message"
+            value={message}
+            onChange={handleMessageChange}
+            className="textarea border border-gray-300 rounded w-full my-2 py-1 pl-2 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+          />
+          <p>Number of SMS: {smsCount}</p>
           <div className="bg-gray-300 h-[1px] mx-auto w-[100%] mt-5"></div>
           <div className="bottom flex flex-row justify-between mt-5">
             <span className="text-gray-500">

@@ -1,14 +1,92 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { MessageOutlined } from "@ant-design/icons";
-
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
+import { useRouter } from "next/router";
 
 const FormsMail = () => {
   const [threadName, setThreadName] = useState("");
   const [error, setError] = useState("");
   const [text, setText] = useState("");
+  const [customers, setCustomers] = useState([]);
+  const [receivers, setReceivers] = useState([]);
+  const [newCustomerEmail, setNewCustomerEmail] = useState("");
+  const [newRecieverEmail, setNewRecieverEmail] = useState("");
+  const router = useRouter();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  function handleSendClick() {
+    setIsModalOpen(true);
+  }
+
+  function handleConfirm() {
+    router.push("/campaignMenu");
+  }
+
+  useEffect(() => {
+    const storedData = localStorage.getItem("users");
+    if (storedData) {
+      const { customers, receivers } = JSON.parse(storedData);
+      setCustomers(customers);
+      setReceivers(receivers);
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("users", JSON.stringify({ customers, receivers }));
+  }, [customers, receivers]);
+
+  const handleNewCustomerEmailChange = (event) => {
+    setNewCustomerEmail(event.target.value);
+  };
+
+  const handleNewCustomerEmailKeyPress = (event) => {
+    if (event.key === "Enter") {
+      addNewCustomer(newRecieverEmail);
+    }
+  };
+
+  const addNewCustomer = (email) => {
+    if (!isValidEmail(email)) {
+      alert("Invalid email address");
+      return;
+    }
+
+    // Check if the email already exists among Customers
+    if (customers.find((customer) => customer.email === email)) {
+      alert("Email already exists");
+      return;
+    }
+
+    // Create a new Customer and add them to the Customers and Receivers lists
+    const newCustomer = { email };
+    const updatedCustomers = [...customers, newCustomer];
+    setCustomers(updatedCustomers);
+    setReceivers([...receivers, newCustomer]);
+    setNewCustomerEmail("");
+
+    localStorage.setItem(
+      "users",
+      JSON.stringify({
+        customers: updatedCustomers,
+        receivers: [...receivers, newCustomer],
+      })
+    );
+  };
+
+  const handleSelectAll = () => {
+    setReceivers(customers);
+    localStorage.setItem(
+      "users",
+      JSON.stringify({ customers, receivers: receivers })
+    );
+  };
+
+  const handleDeselectAll = () => {
+    setReceivers([]);
+    localStorage.setItem("users", JSON.stringify({ customers, receivers: [] }));
+  };
 
   const handleTextChange = (value) => {
     setText(value);
@@ -76,23 +154,58 @@ const FormsMail = () => {
               />
             </label>
           </form>
-          <form className="w-full" onSubmit={handleSubmit}>
+          <form className="w-full " onSubmit={handleSubmit}>
             {error && <p>{error}</p>}
-            <label className="flex flex-col">
-              <span className="flex">
-                To <p className="text-red-500 ml-2">*</p>
-              </span>
-              <select
-                className="border border-gray-300 rounded my-2 py-1 pl-2 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent"
-                name="options"
-                id="options"
-              >
-                <option value="option1">Option 1</option>
-                <option value="option2">Option 2</option>
-                <option value="option3">Option 3</option>
-                <option value="option4">Option 4</option>
-              </select>
-            </label>
+
+            <div className="mt-8">
+              <div className="border rounded">
+                <h2 className="pl-2 pt-1 text-lg">Customers</h2>
+                <button
+                  className="mr-5 ml-2 my-2 border rounded bg-blue-500 px-2 py-1 text-white"
+                  onClick={handleSelectAll}
+                >
+                  Choose All
+                </button>
+                <button
+                  className="border rounded bg-green-400 px-2 py-1 text-white"
+                  onClick={handleDeselectAll}
+                >
+                  Deselect All
+                </button>
+                <input
+                  type="text"
+                  className="border w-[58%] ml-2 border-gray-300 rounded my-2 py-1 pl-2 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Enter new customer email"
+                  value={newCustomerEmail}
+                  onChange={handleNewCustomerEmailChange}
+                  onKeyPress={handleNewCustomerEmailKeyPress}
+                />
+
+                <button
+                  className="ml-2 border rounded bg-yellow-500 text-white px-2 py-1"
+                  onClick={() => addNewCustomer(newCustomerEmail)}
+                >
+                  Add Customer
+                </button>
+                <select multiple style={{ width: "355px" }}>
+                  <option>test@test</option>
+                </select>
+
+                <br />
+              </div>
+              <div className="border">
+                <h2>Receivers</h2>
+                <select
+                  multiple
+                  style={{ width: "355px" }}
+                  value={receivers.map((receiver) => receiver.email)}
+                >
+                  {receivers.map((reciever) => (
+                    <option>{reciever.email}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
           </form>
         </div>
         <div className="flex flex-row">
@@ -199,11 +312,65 @@ const FormsMail = () => {
             ]}
           />
           <div className="bg-gray-300 h-[1px] mx-auto w-[100%] mt-5"></div>
-          <div className="bottom flex flex-row justify-between mt-5">
-            <span className="text-gray-500">
-              * Don't insert link if teamplate not selected
-            </span>
-            <button className="bg-green-400 px-3 py-1 text-white">Send</button>
+          <div>
+            <h1>Campaign Send</h1>
+            <div className="bottom flex flex-row justify-between mt-5">
+              <span className="text-gray-500">
+                * Don't insert link if template not selected
+              </span>
+              <button
+                className="bg-green-400 px-3 py-1 text-white"
+                onClick={handleSendClick}
+              >
+                Send
+              </button>
+            </div>
+            {isModalOpen && (
+              <div
+                className="modal"
+                style={{
+                  position: "fixed",
+                  top: 0,
+                  left: 0,
+                  width: "100%",
+                  height: "100%",
+                  backgroundColor: "rgba(0, 0, 0, 0.5)",
+                  zIndex: 999,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderWidth: 1,
+                }}
+              >
+                <div
+                  className="modal-content"
+                  style={{
+                    backgroundColor: "white",
+                    padding: 20,
+                    borderRadius: 5,
+                    maxWidth: 500,
+                  }}
+                >
+                  <p className="mb-6">
+                    Are you sure you want to send this campaign?
+                  </p>
+                  <div>
+                    <button
+                      className="bg-green-500 text-white px-5 py-1 rounded mr-6"
+                      onClick={handleConfirm}
+                    >
+                      Yes
+                    </button>
+                    <button
+                      className="bg-red-500 text-white px-5 py-1 rounded mr-6"
+                      onClick={() => setIsModalOpen(false)}
+                    >
+                      No
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -233,5 +400,10 @@ const FormsMail = () => {
     </div>
   );
 };
+
+function isValidEmail(email) {
+  // Check if the email is valid using a regular expression
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
 
 export default FormsMail;
